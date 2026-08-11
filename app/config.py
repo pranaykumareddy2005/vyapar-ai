@@ -57,9 +57,17 @@ class Settings(BaseSettings):
     ai_model: str = "gemini-1.5-flash"
     ai_request_timeout_seconds: float = Field(default=30.0, gt=0.0)
 
-    # --- Payments (Phase 6) -----------------------------------------------
+    # --- Payments (Phase 8) -----------------------------------------------
+    # "mock" wires the deterministic MockPaymentProvider (dev/test); "razorpay"
+    # wires RazorpayAdapter, which requires RZP_KEY/RZP_SECRET. Chosen explicitly;
+    # never a silent fallback to the mock in production.
+    payment_provider: Literal["mock", "razorpay"] = "mock"
     rzp_key: str = ""
     rzp_secret: str = ""
+    rzp_api_base: str = "https://api.razorpay.com/v1"
+    payment_request_timeout_seconds: float = Field(default=30.0, gt=0.0)
+    # Trusted expected currency for payments; never taken from client input.
+    default_currency: str = "INR"
 
     # --- Tax (configurable per plan item 10; NOT a hard-coded GST rule) ----
     default_tax_rate: float = Field(default=0.0, ge=0.0, le=1.0)

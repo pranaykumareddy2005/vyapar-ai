@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
     from app.customer.router import router as customer_router
     from app.inventory.router import router as inventory_router
     from app.order.router import router as order_router
+    from app.payment.router import router as payment_router
 
     app.include_router(auth_router)
     app.include_router(business_router)
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(conversation_router)
     app.include_router(customer_router)
     app.include_router(order_router)
+    app.include_router(payment_router)
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> dict[str, str]:

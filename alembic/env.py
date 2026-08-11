@@ -19,6 +19,7 @@ from app.catalogai import models as _catalogai_models  # noqa: F401
 from app.customer import models as _customer_models  # noqa: F401
 from app.inventory import models as _inventory_models  # noqa: F401
 from app.order import models as _order_models  # noqa: F401
+from app.payment import models as _payment_models  # noqa: F401
 from app.config import get_settings
 from app.db import Base
 from sqlalchemy import engine_from_config, pool

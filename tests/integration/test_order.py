@@ -14,6 +14,7 @@ from tests.integration.helpers import (
     create_inventory,
     create_order,
     create_product,
+    pay_order_online,
     register_business,
     set_pin,
     transition_order,
@@ -173,13 +174,25 @@ def test_cancel_created_order_no_inventory_change(api: TestClient) -> None:
 
 
 def test_full_lifecycle_happy_path(api: TestClient) -> None:
+    # Phase 8: PAID is reached via the payment flow, not a client PAY transition.
     ctx = _seed(api, qty=10)
     order = create_order(
         api, ctx["reg"].access, ctx["cust"], [{"product_id": ctx["pid"], "quantity": 2}]
     ).json()
+    assert transition_order(api, ctx["reg"].access, order["id"], "CONFIRM").json()["status"] == (
+        "CONFIRMED"
+    )
+    # Client PAY transition is now blocked (must use the payment API).
+    assert transition_order(api, ctx["reg"].access, order["id"], "PAY").status_code == 409
+    payment = pay_order_online(api, ctx["reg"].access, order["id"])
+    assert payment["status"] == "SUCCESS"
+    assert (
+        api.get(f"/api/orders/{order['id']}", headers=auth_header(ctx["reg"].access)).json()[
+            "status"
+        ]
+        == "PAID"
+    )
     for event, expected in [
-        ("CONFIRM", "CONFIRMED"),
-        ("PAY", "PAID"),
         ("PACK", "PACKED"),
         ("SHIP", "SHIPPED"),
         ("DELIVER", "DELIVERED"),

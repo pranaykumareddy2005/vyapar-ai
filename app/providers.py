@@ -24,6 +24,11 @@ from app.conversation.provider import (
     ConversationAiProvider,
     MockConversationAiProvider,
 )
+from app.payment.provider import (
+    MockPaymentProvider,
+    PaymentProvider,
+    PaymentProviderConfigError,
+)
 from app.redis_client import get_redis
 
 
@@ -105,6 +110,34 @@ def build_conversation_ai_provider(settings: Settings) -> ConversationAiProvider
 def get_conversation_ai_provider() -> ConversationAiProvider:
     """Process-wide conversation AI provider (FastAPI dependency)."""
     return build_conversation_ai_provider(get_settings())
+
+
+def build_payment_provider(settings: Settings) -> PaymentProvider:
+    """Select the payment provider (gateway) from configuration.
+
+    Chosen explicitly; never a silent fallback to the mock in production.
+    ``razorpay`` requires RZP_KEY/RZP_SECRET and fails loudly if they are missing.
+    """
+    if settings.payment_provider == "razorpay":
+        from app.payment.adapters.razorpay import RazorpayAdapter
+
+        return RazorpayAdapter(
+            key=settings.rzp_key,
+            secret=settings.rzp_secret,
+            api_base=settings.rzp_api_base,
+            timeout=settings.payment_request_timeout_seconds,
+        )
+    if settings.is_production:
+        raise PaymentProviderConfigError(
+            "PAYMENT_PROVIDER=mock is not permitted in production; set PAYMENT_PROVIDER=razorpay"
+        )
+    return MockPaymentProvider()
+
+
+@lru_cache(maxsize=1)
+def get_payment_provider() -> PaymentProvider:
+    """Process-wide payment provider (FastAPI dependency)."""
+    return build_payment_provider(get_settings())
 
 
 @lru_cache(maxsize=1)

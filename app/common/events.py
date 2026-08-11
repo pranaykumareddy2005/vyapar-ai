@@ -63,6 +63,25 @@ class OrderCancelled(DomainEvent):
     customer_id: int
 
 
+@dataclass(frozen=True, slots=True)
+class PaymentSucceeded(DomainEvent):
+    """Published after a payment is verified successful and the order reaches PAID."""
+
+    business_id: int
+    order_id: int
+    payment_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class PaymentFailed(DomainEvent):
+    """Published after a payment attempt fails verification."""
+
+    business_id: int
+    order_id: int
+    payment_id: int
+    failure_code: str
+
+
 E = TypeVar("E", bound=DomainEvent)
 Handler = Callable[[DomainEvent], None]
 

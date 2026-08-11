@@ -170,3 +170,29 @@ def transition_order(api: TestClient, access: str, order_id: int, event: str) ->
         headers=auth_header(access),
         json={"event": event},
     )
+
+
+def initiate_payment(
+    api: TestClient, access: str, order_id: int, *, method: str = "ONLINE"
+) -> object:
+    return api.post(
+        "/api/payments",
+        headers=auth_header(access),
+        json={"order_id": order_id, "method": method},
+    )
+
+
+def verify_payment(
+    api: TestClient, access: str, payment_id: int, provider_payment_id: str
+) -> object:
+    return api.post(
+        f"/api/payments/{payment_id}/verify",
+        headers=auth_header(access),
+        json={"provider_payment_id": provider_payment_id},
+    )
+
+
+def pay_order_online(api: TestClient, access: str, order_id: int, *, pid: str = "pay_ok_1") -> dict:
+    """Confirmed order -> initiate online payment -> verify success. Returns payment."""
+    payment = initiate_payment(api, access, order_id).json()  # type: ignore[attr-defined]
+    return verify_payment(api, access, payment["id"], pid).json()  # type: ignore[attr-defined]
