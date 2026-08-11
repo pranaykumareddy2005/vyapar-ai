@@ -72,6 +72,15 @@ class Settings(BaseSettings):
     # --- Tax (configurable per plan item 10; NOT a hard-coded GST rule) ----
     default_tax_rate: float = Field(default=0.0, ge=0.0, le=1.0)
 
+    # --- Notifications & analytics (Phase 10) -----------------------------
+    # In-app notifications are created post-commit from domain events. The global
+    # event listener is disabled in the test environment so the rolled-back test
+    # session is not touched by an independent-session listener.
+    notifications_enabled: bool = True
+    # Business timezone used to compute "today"/"this month" analytics boundaries;
+    # boundaries are converted to a UTC created_at range (no UTC/local mixing).
+    business_timezone: str = "UTC"
+
     # --- Object storage ----------------------------------------------------
     # "memory" uses the in-process fake (dev/test); "s3" targets MinIO/S3.
     storage_backend: Literal["memory", "s3"] = "memory"

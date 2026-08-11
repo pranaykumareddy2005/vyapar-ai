@@ -200,3 +200,16 @@ def pay_order_online(api: TestClient, access: str, order_id: int, *, pid: str = 
 
 def generate_invoice(api: TestClient, access: str, order_id: int) -> object:
     return api.post("/api/invoices", headers=auth_header(access), json={"order_id": order_id})
+
+
+def make_order(api: TestClient, access: str, product_id: int, customer_id: int, qty: int) -> int:
+    order = create_order(
+        api, access, customer_id, [{"product_id": product_id, "quantity": qty}]
+    ).json()  # type: ignore[attr-defined]
+    return order["id"]
+
+
+def pay_existing_order(api: TestClient, access: str, order_id: int, *, pid: str) -> None:
+    """Confirm then pay an existing order online with a unique provider payment id."""
+    transition_order(api, access, order_id, "CONFIRM")
+    pay_order_online(api, access, order_id, pid=pid)

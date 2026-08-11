@@ -19,6 +19,10 @@ os.environ.setdefault("JWT_SECRET", "test-secret-value-at-least-32-bytes-long!!"
 os.environ.setdefault("JWT_ACCESS_TTL_SECONDS", "900")
 os.environ.setdefault("MESSAGING_PROVIDER", "mock")
 os.environ.setdefault("STORAGE_BACKEND", "memory")
+# The notification listener writes via its own SessionLocal (independent of the
+# rolled-back test session); disable the global subscription so the standard suite
+# is unaffected. Notification behavior is tested with real committed sessions.
+os.environ.setdefault("NOTIFICATIONS_ENABLED", "false")
 os.environ.setdefault("DB_URL", "postgresql+psycopg://vyapar:vyapar@localhost:5432/vyapar_test")
 
 from collections.abc import Iterator

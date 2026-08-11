@@ -22,14 +22,17 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
 
+    from app.analytics.router import router as analytics_router
     from app.auth.router import router as auth_router
     from app.business.router import router as business_router
     from app.catalog.router import router as catalog_router
     from app.catalogai.router import router as catalog_ai_router
     from app.conversation.router import router as conversation_router
     from app.customer.router import router as customer_router
+    from app.dashboard.router import router as dashboard_router
     from app.inventory.router import router as inventory_router
     from app.invoice.router import router as invoice_router
+    from app.notification.router import router as notification_router
     from app.order.router import router as order_router
     from app.payment.router import router as payment_router
 
@@ -43,6 +46,9 @@ def create_app() -> FastAPI:
     app.include_router(order_router)
     app.include_router(payment_router)
     app.include_router(invoice_router)
+    app.include_router(notification_router)
+    app.include_router(analytics_router)
+    app.include_router(dashboard_router)
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> dict[str, str]:
@@ -58,4 +64,23 @@ def create_app() -> FastAPI:
     return app
 
 
+def _wire_notifications() -> None:
+    """Subscribe the notification listener to the EventBus exactly once.
+
+    Registered at module import (not per ``create_app``) so handlers are not
+    duplicated across the many ``create_app`` calls in tests. Gated by
+    ``notifications_enabled`` (disabled in the test env so the rolled-back test
+    session is never touched by the independent-session listener).
+    """
+    settings = get_settings()
+    if not settings.notifications_enabled:
+        return
+    from app.common.events import event_bus
+    from app.db import SessionLocal
+    from app.notification.listener import NotificationEventListener
+
+    NotificationEventListener(SessionLocal).register(event_bus)
+
+
 app = create_app()
+_wire_notifications()
