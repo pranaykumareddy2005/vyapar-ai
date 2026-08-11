@@ -9,7 +9,7 @@ WORKDIR /app
 # Install dependencies first for better layer caching.
 COPY pyproject.toml ./
 COPY app ./app
-RUN pip install --no-cache-dir -e ".[storage]"
+RUN pip install --no-cache-dir -e ".[storage,pdf]"
 
 COPY alembic.ini ./
 COPY alembic ./alembic

@@ -30,6 +30,8 @@ dev = [
     "mypy>=1.13",
     "bandit>=1.8",
     "types-passlib>=1.7",
+    # Reads generated invoice PDFs in tests to verify their content (Phase 9).
+    "pypdf>=5.0",
 ]
 # Object storage adapters (S3/MinIO). Kept optional so the core installs lean;
 # the storage abstraction has an in-process fake used by tests.
@@ -75,7 +77,7 @@ disallow_untyped_defs = true
 no_implicit_optional = true
 
 [[tool.mypy.overrides]]
-module = ["passlib.*", "boto3.*", "botocore.*"]
+module = ["passlib.*", "boto3.*", "botocore.*", "reportlab.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

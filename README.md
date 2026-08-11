@@ -21,7 +21,7 @@ SDK. WhatsApp is an external interface: the engine consumes only the normalized
 **Tenant isolation:** `business` is the tenant root. Every business-owned query is filtered by
 the `business_id` taken from the authenticated principal — never from client-supplied data.
 
-### Modules (`app/`)
+### Modules (`app/`)  
 | Package | Responsibility | Phase |
 |---|---|---|
 | `common/` | Money, exceptions, domain events, security (JWT/RBAC/PIN), `ObjectStorage`, `MessagingProvider` | 1 |

@@ -38,6 +38,19 @@ class PaymentRepository:
         )
         return self._session.scalars(stmt).first()
 
+    def get_successful_for_order(self, business_id: int, order_id: int) -> Payment | None:
+        """Return the (single) successful payment for an order, if any.
+
+        Read-only helper used by the invoice domain to snapshot payment method and
+        reference; it does not change any payment state.
+        """
+        stmt = select(Payment).where(
+            Payment.business_id == business_id,
+            Payment.order_id == order_id,
+            Payment.status == PaymentStatus.SUCCESS,
+        )
+        return self._session.scalars(stmt).first()
+
     def successful_exists_for_order(self, business_id: int, order_id: int) -> bool:
         stmt = select(Payment.id).where(
             Payment.business_id == business_id,

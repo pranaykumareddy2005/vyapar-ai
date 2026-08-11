@@ -196,3 +196,7 @@ def pay_order_online(api: TestClient, access: str, order_id: int, *, pid: str = 
     """Confirmed order -> initiate online payment -> verify success. Returns payment."""
     payment = initiate_payment(api, access, order_id).json()  # type: ignore[attr-defined]
     return verify_payment(api, access, payment["id"], pid).json()  # type: ignore[attr-defined]
+
+
+def generate_invoice(api: TestClient, access: str, order_id: int) -> object:
+    return api.post("/api/invoices", headers=auth_header(access), json={"order_id": order_id})
