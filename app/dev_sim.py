@@ -2,8 +2,9 @@
 
 Let developers push a message through the messaging boundary without WhatsApp/Meta.
 
-- ``/dev/simulate-message`` is the Phase-1 acknowledgement echo (kept unchanged).
-- ``/dev/simulate-conversation`` runs the full Phase-6 conversation pipeline
+- ``/dev/simulate-message`` is a simple acknowledgement echo through the
+  messaging boundary.
+- ``/dev/simulate-conversation`` runs the full conversation pipeline
   (IncomingMessage -> ConversationService -> Mock AI -> handler -> domain service
   -> OutgoingMessage -> MockMessagingProvider), proving the pipeline without a
   Meta or Gemini key. ``business_id`` here simulates the channel resolving which
@@ -60,8 +61,8 @@ def simulate_message(
         timestamp=datetime.now(UTC),
     )
 
-    # Phase 1 placeholder response. Replaced by the conversation pipeline in
-    # Phase 3; the provider boundary below stays identical.
+    # Simple acknowledgement echo. For the full intent pipeline use
+    # /dev/simulate-conversation; the provider boundary below is identical.
     reply_text = f"Received: {incoming.text}"
     outgoing = OutgoingMessage(
         business_id=incoming.business_id,

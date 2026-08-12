@@ -35,11 +35,10 @@ from app.redis_client import get_redis
 def build_messaging_provider(settings: Settings) -> MessagingProvider:
     """Select the messaging provider from configuration."""
     if settings.messaging_provider == "whatsapp":
-        # WhatsAppMessagingProvider is implemented in Phase 5. Fail loudly
-        # rather than silently degrading to the mock in a real environment.
+        # A WhatsApp/Meta adapter is not yet implemented. Fail loudly rather
+        # than silently degrading to the mock in a real environment.
         raise NotImplementedError(
-            "WhatsAppMessagingProvider is not available until Phase 5; "
-            "set MESSAGING_PROVIDER=mock for development."
+            "WhatsAppMessagingProvider is not implemented; set MESSAGING_PROVIDER=mock."
         )
     return MockMessagingProvider()
 
@@ -60,8 +59,8 @@ def build_ai_provider(settings: Settings) -> AiProvider:
     """Select the AI provider from configuration (Adapter/Factory patterns).
 
     The provider is chosen explicitly; there is never a silent fallback to the
-    mock in production (plan item 20). ``gemini`` requires ``AI_API_KEY`` and
-    fails loudly if it is missing.
+    mock in production. ``gemini`` requires ``AI_API_KEY`` and fails loudly if it
+    is missing.
     """
     if settings.ai_provider == "gemini":
         # Imported lazily so the mock path never imports the vendor adapter.

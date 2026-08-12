@@ -1,8 +1,8 @@
 """Base security infrastructure: password/PIN hashing and JWT tokens.
 
 RBAC dependencies (``require_role``, ``require_pin``) that need request context
-are added with the ``auth`` module in Phase 2; this module provides the pure,
-framework-agnostic primitives they build on.
+live in the ``auth`` module; this module provides the pure, framework-agnostic
+primitives they build on.
 """
 
 from __future__ import annotations

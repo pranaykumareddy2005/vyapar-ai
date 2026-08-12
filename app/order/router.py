@@ -56,10 +56,10 @@ def transition_order(
     principal: Principal = Depends(require_role(*_MUTATOR_ROLES)),
     service: OrderService = Depends(get_order_service),
 ) -> OrderOut:
-    # Phase 8: reaching PAID must go through verified payment (PaymentService),
-    # not a raw client transition. The PAY transition remains available to
-    # PaymentService via the OrderService boundary; only client HTTP access is
-    # blocked here (docs/phase8_schema_decision.md D6).
+    # Reaching PAID must go through verified payment (PaymentService), not a raw
+    # client transition. The PAY transition remains available to PaymentService
+    # via the OrderService boundary; only client HTTP access is blocked here
+    # (see docs/history/phase8_schema_decision.md D6).
     if payload.event is OrderEvent.PAY:
         raise ConflictError("use the payment API to mark an order paid")
     order = service.transition(

@@ -5,7 +5,7 @@ Decimal columns (order totals, payment amounts). Sales count orders that reached
 paid-or-later, non-cancelled state; payment totals use successful Payment rows;
 low-stock uses the same ``quantity <= low_stock_threshold`` rule as InventoryService;
 top products use the immutable OrderItem snapshots. Semantics are documented in
-docs/phase10_architecture_decision.md.
+docs/history/phase10_architecture_decision.md.
 """
 
 from __future__ import annotations

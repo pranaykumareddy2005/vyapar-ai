@@ -3,7 +3,7 @@
 ``business_id`` and ``actor_user_id`` come exclusively from the authenticated
 principal; the AI can never influence them. Requires OWNER/EMPLOYEE (the pipeline
 can mutate stock), consistent with the catalog/inventory mutation policy. This is
-the vendor-neutral entry point - no WhatsApp/Meta webhook is exposed in Phase 6.
+the vendor-neutral entry point - no WhatsApp/Meta webhook is exposed.
 """
 
 from __future__ import annotations

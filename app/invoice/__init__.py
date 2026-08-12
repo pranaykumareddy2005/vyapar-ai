@@ -1,4 +1,4 @@
-"""Invoice domain (Phase 9).
+"""Invoice domain.
 
 Generates an immutable, numbered PDF invoice from a PAID order. Every financial,
 customer, and line-item value is a snapshot captured at issuance, so later Product,

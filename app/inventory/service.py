@@ -7,7 +7,7 @@ modify ``inventory.quantity`` directly; a future ``OrderService`` or Conversatio
 handler calls :meth:`adjust_stock` / :meth:`adjust_stock_by_product`.
 
 Low-stock events are published *after* a successful commit (never for a rolled-
-back change). See docs/phase5_schema_decision.md §4 for the event/commit ordering
+back change). See docs/history/phase5_schema_decision.md §4 for the event/commit ordering
 and its one documented limitation.
 """
 

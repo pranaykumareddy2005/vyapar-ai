@@ -1,4 +1,4 @@
-"""AI Catalog Generator (hero feature, Phase 4).
+"""AI Catalog Generator (hero feature).
 
 Turns a product photograph into a *drafted* listing via a multimodal provider,
 then requires explicit merchant approval before any final ``Product`` is created.

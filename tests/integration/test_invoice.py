@@ -28,7 +28,7 @@ def _paid_order(
     cust = create_customer(api, reg.access, phone=f"+9199{sku}")["id"]  # type: ignore[attr-defined]
     order = create_order(api, reg.access, cust, [{"product_id": pid, "quantity": qty}]).json()  # type: ignore[attr-defined]
     transition_order(api, reg.access, order["id"], "CONFIRM")  # type: ignore[attr-defined]
-    # Unique provider payment id per order (Phase-8 replay protection).
+    # Unique provider payment id per order (payment replay protection).
     pay_order_online(api, reg.access, order["id"], pid=f"pay_ok_{sku}")  # type: ignore[attr-defined]
     return {"order": order["id"], "pid": pid, "cust": cust}
 

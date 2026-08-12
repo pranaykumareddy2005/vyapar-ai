@@ -262,7 +262,7 @@ guessing IDs.
 - **Money** is handled with `Decimal`/`NUMERIC` — never floats — via the shared
   `Money` primitive.
 
-Schema decisions per phase are documented under `docs/` (see
+Schema decision records are preserved under `docs/history/` (see
 [Documentation](#documentation)).
 
 ## Event architecture
@@ -368,11 +368,11 @@ vyapar-ai/
 │   ├── providers.py     # composition root (provider selection)
 │   ├── dev_sim.py       # non-production message simulation
 │   └── main.py          # app factory & router mounting
-├── alembic/             # migrations (one revision per phase)
+├── alembic/             # database migrations (linear revision chain)
 ├── tests/
 │   ├── unit/
 │   └── integration/
-├── docs/                # per-phase architecture & schema decisions
+├── docs/                # architecture & schema decision records (history/)
 ├── Dockerfile
 ├── docker-compose.yml
 ├── pyproject.toml
@@ -495,8 +495,9 @@ alembic downgrade -1                        # roll back one revision
 alembic revision --autogenerate -m "msg"    # generate a new migration from model changes
 ```
 
-Migrations are organized one revision per phase (business/users → catalog →
-catalog AI → inventory → customer/order → payment → invoice → notification).
+Migrations form a single linear revision chain in dependency order
+(business/users → catalog → catalog AI → inventory → customer/order → payment →
+invoice → notification).
 
 ## Testing
 
@@ -616,15 +617,12 @@ These are FastAPI defaults; no custom docs path is configured in the app.
 
 ## Documentation
 
-Per-phase architecture and schema decision records live under `docs/`:
-
-- `docs/phase4_schema_decision.md` — AI catalog draft schema
-- `docs/phase5_schema_decision.md` — inventory & stock movement
-- `docs/phase6_architecture_decision.md` — conversational AI
-- `docs/phase7_schema_decision.md` — customer & order
-- `docs/phase8_schema_decision.md` — payment
-- `docs/phase9_schema_decision.md` — invoice
-- `docs/phase10_architecture_decision.md`, `docs/phase10_schema_decision.md` — notifications, analytics & dashboard
+Architecture and schema **decision records** are preserved under
+[`docs/history/`](docs/history/) as historical engineering context. They document
+the rationale behind each domain's schema and boundaries and are still referenced
+from a few source comments. See [`docs/history/README.md`](docs/history/README.md)
+for the index. This top-level README (and the code) is the authoritative
+description of the current system.
 
 Detailed product/requirements documents (PDD, SRS, SDD, LLD) are maintained
 outside the application repository.

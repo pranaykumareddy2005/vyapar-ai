@@ -5,7 +5,7 @@ quantity and the configurable low-stock threshold; a partial ``CHECK`` keeps
 quantity non-negative as a database backstop to the service's transactional
 guard. ``StockMovement`` is immutable history - it is only ever inserted, never
 updated (corrections are new compensating movements). No quantity column lives on
-``Product`` (the Phase-3 product/stock separation is preserved).
+``Product`` (product identity and stock are kept in separate tables).
 """
 
 from __future__ import annotations

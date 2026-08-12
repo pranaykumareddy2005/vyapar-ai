@@ -7,10 +7,10 @@ talks to the :class:`MessagingProvider` protocol.
 
 Concrete providers:
   - :class:`MockMessagingProvider` (this module) - dev/testing, no network.
-  - ``WhatsAppMessagingProvider`` - added in Phase 5, translates Meta payloads
-    to/from these models and calls the Meta Cloud API.
 
-No Meta-specific payload structure may leak past a provider implementation.
+A future ``WhatsAppMessagingProvider`` would translate Meta payloads to/from
+these models and call the Meta Cloud API; it is not yet implemented. No
+Meta-specific payload structure may leak past a provider implementation.
 """
 
 from __future__ import annotations

@@ -2,8 +2,8 @@
 
 A lightweight synchronous publish/subscribe bus. Domain services publish events
 (e.g. ``LowStock``) without knowing who consumes them; the notification module
-subscribes in later phases. This keeps modules decoupled (Observer pattern)
-while staying inside the single monolith process.
+subscribes as a consumer. This keeps modules decoupled (Observer pattern) while
+staying inside the single monolith process.
 
 The bus is intentionally simple and synchronous for the MVP. Handlers are
 invoked in registration order; a failing handler is isolated so it cannot

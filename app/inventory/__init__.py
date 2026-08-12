@@ -1,4 +1,4 @@
-"""Inventory Management domain (Phase 5).
+"""Inventory Management domain.
 
 Owns stock quantity, the low-stock threshold, and the immutable stock-movement
 history. Every mutation of ``inventory.quantity`` goes through the authoritative

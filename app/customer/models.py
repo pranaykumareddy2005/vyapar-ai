@@ -18,7 +18,7 @@ class Customer(TimestampMixin, Base):
     __tablename__ = "customer"
     __table_args__ = (
         # Phone unique per business among active customers; a soft-deleted
-        # customer's phone can be reused (documented Phase-7 decision).
+        # customer's phone can be reused (deliberate soft-delete decision).
         Index(
             "uq_customer_business_phone_active",
             "business_id",

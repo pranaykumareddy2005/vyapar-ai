@@ -1,4 +1,4 @@
-"""Order domain (Phase 7).
+"""Order domain.
 
 Owns orders, order items, the guarded lifecycle state machine, and order totals.
 Inventory is decremented on confirm and restored on cancel-from-confirmed, always

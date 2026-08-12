@@ -39,25 +39,26 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_seconds: int = 60 * 60 * 24 * 14
 
     # --- Messaging (WhatsApp) ---------------------------------------------
-    # "mock" wires MockMessagingProvider; "whatsapp" is added in Phase 5.
+    # "mock" wires MockMessagingProvider. "whatsapp" is reserved for a future
+    # WhatsApp/Meta adapter and is not yet implemented (selecting it raises).
     messaging_provider: Literal["mock", "whatsapp"] = "mock"
     wa_verify_token: str = "dev-verify-token"
     wa_api_token: str = ""
     wa_phone_number_id: str = ""
 
-    # --- AI provider (Phase 3/4) ------------------------------------------
+    # --- AI provider ------------------------------------------------------
     ai_api_key: str = ""
-    # Configurable per approved plan item 11. 0.6 is only a development default,
-    # not a fixed business rule; below this the engine must ask for clarification.
+    # Configurable confidence threshold. 0.6 is only a development default, not a
+    # fixed business rule; below this the engine must ask for clarification.
     ai_confidence_threshold: float = Field(default=0.6, ge=0.0, le=1.0)
     # "mock" wires the deterministic MockAiProvider (dev/test); "gemini" wires the
     # real GeminiAdapter, which requires AI_API_KEY. Never a silent fallback: the
-    # provider is chosen explicitly (plan item 20).
+    # provider is chosen explicitly.
     ai_provider: Literal["mock", "gemini"] = "mock"
     ai_model: str = "gemini-1.5-flash"
     ai_request_timeout_seconds: float = Field(default=30.0, gt=0.0)
 
-    # --- Payments (Phase 8) -----------------------------------------------
+    # --- Payments ---------------------------------------------------------
     # "mock" wires the deterministic MockPaymentProvider (dev/test); "razorpay"
     # wires RazorpayAdapter, which requires RZP_KEY/RZP_SECRET. Chosen explicitly;
     # never a silent fallback to the mock in production.
@@ -69,10 +70,10 @@ class Settings(BaseSettings):
     # Trusted expected currency for payments; never taken from client input.
     default_currency: str = "INR"
 
-    # --- Tax (configurable per plan item 10; NOT a hard-coded GST rule) ----
+    # --- Tax (configurable rate; NOT a hard-coded GST rule) ---------------
     default_tax_rate: float = Field(default=0.0, ge=0.0, le=1.0)
 
-    # --- Notifications & analytics (Phase 10) -----------------------------
+    # --- Notifications & analytics ----------------------------------------
     # In-app notifications are created post-commit from domain events. The global
     # event listener is disabled in the test environment so the rolled-back test
     # session is not touched by an independent-session listener.

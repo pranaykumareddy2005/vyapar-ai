@@ -1,4 +1,4 @@
-"""Integration tests: AI catalog draft lifecycle end to end (Phase 4).
+"""Integration tests: AI catalog draft lifecycle end to end.
 
 Uses the deterministic MockAiProvider (the test default). Provider-failure cases
 override the AI provider dependency with a failing stub.

@@ -1,6 +1,6 @@
 """Event -> notification wiring.
 
-Subscribes to the existing Phase-1 EventBus. Each handler runs post-commit (the
+Subscribes to the in-process EventBus. Each handler runs post-commit (the
 producing domain service publishes after its own commit) and opens its OWN session
 from a factory, so a notification write can never roll back or fail the committed
 domain change. Handler failures are isolated by the EventBus and additionally

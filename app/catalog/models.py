@@ -46,7 +46,7 @@ class Product(TimestampMixin, Base):
     __tablename__ = "product"
     __table_args__ = (
         # SKU unique per business among active products only; a soft-deleted
-        # product's SKU can be reclaimed (documented Phase-3 decision).
+        # product's SKU can be reclaimed (deliberate soft-delete decision).
         Index(
             "uq_product_business_sku_active",
             "business_id",

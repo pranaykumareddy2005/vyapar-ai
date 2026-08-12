@@ -1,4 +1,4 @@
-"""Merchant dashboard (Phase 10).
+"""Merchant dashboard.
 
 A read-only presentation layer that composes AnalyticsService results with a few
 domain reads (recent orders, unread notifications) into one KPI summary. It holds

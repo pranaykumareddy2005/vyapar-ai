@@ -31,7 +31,7 @@ from app.db import Base
 
 
 class DraftStatus(enum.StrEnum):
-    """AI draft lifecycle (see docs/phase4_schema_decision.md §4)."""
+    """AI draft lifecycle (see docs/history/phase4_schema_decision.md §4)."""
 
     PENDING = "PENDING"  # row persisted, AI call in flight
     GENERATED = "GENERATED"  # AI succeeded; awaiting merchant review/edit/approval

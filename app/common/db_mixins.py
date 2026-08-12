@@ -12,7 +12,7 @@ class TimestampMixin:
     """Adds server-managed ``created_at`` / ``updated_at`` columns.
 
     Timestamps satisfy the audit requirement (NFR-SEC-02) at row level; a
-    dedicated audit-log table is deferred to a later phase.
+    dedicated audit-log table is not currently implemented.
     """
 
     created_at: Mapped[datetime] = mapped_column(

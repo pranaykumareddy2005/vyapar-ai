@@ -34,7 +34,7 @@ from app.payment.repository import PaymentRepository
 logger = logging.getLogger(__name__)
 
 # An invoice may be issued only once the order is paid (or a later fulfillment
-# state), i.e. a successful payment exists (docs/phase9_schema_decision.md D1).
+# state), i.e. a successful payment exists (docs/history/phase9_schema_decision.md D1).
 INVOICEABLE_STATES: frozenset[OrderStatus] = frozenset(
     {
         OrderStatus.PAID,

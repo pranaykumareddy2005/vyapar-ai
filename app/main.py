@@ -1,7 +1,10 @@
 """FastAPI application entrypoint (modular monolith).
 
-Domain routers are mounted here as each module is built (Phase 2+). Phase 1
-wires only health, error handling, and the development simulation endpoint.
+Builds the application in :func:`create_app`: configures the app from settings,
+registers error handlers and every domain router, and exposes the ``/healthz``
+probe. The development message-simulation endpoint is mounted only outside
+production. The notification event listener is subscribed once at import time
+(see :func:`_wire_notifications`).
 """
 
 from __future__ import annotations

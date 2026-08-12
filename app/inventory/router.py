@@ -4,7 +4,7 @@ Authorization uses the authenticated principal's ``business_id`` exclusively.
 Mutations (create inventory, adjust stock, update threshold) require
 OWNER/EMPLOYEE; reads require any authenticated principal. Stock adjustment is
 not a FR-AUTH-03 destructive action, so it is not PIN-gated
-(see docs/phase5_schema_decision.md D10). No stock math lives in handlers.
+(see docs/history/phase5_schema_decision.md D10). No stock math lives in handlers.
 """
 
 from __future__ import annotations

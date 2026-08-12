@@ -1,8 +1,8 @@
 """Authentication service: onboarding, login, token refresh/rotation, logout.
 
 Owns its transaction boundaries explicitly (commit-as-you-go with rollback on
-failure). Uses the Phase-1 ``security`` primitives for hashing and JWTs; it does
-not reimplement them.
+failure). Uses the shared ``common.security`` primitives for hashing and JWTs;
+it does not reimplement them.
 """
 
 from __future__ import annotations

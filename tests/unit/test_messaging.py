@@ -41,6 +41,6 @@ def test_build_mock_provider_from_settings() -> None:
     assert isinstance(provider, MockMessagingProvider)
 
 
-def test_whatsapp_provider_not_available_until_phase5() -> None:
-    with pytest.raises(NotImplementedError, match="Phase 5"):
+def test_whatsapp_provider_not_implemented() -> None:
+    with pytest.raises(NotImplementedError, match="not implemented"):
         build_messaging_provider(Settings(messaging_provider="whatsapp"))

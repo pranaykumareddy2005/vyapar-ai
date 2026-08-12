@@ -174,7 +174,7 @@ def test_cancel_created_order_no_inventory_change(api: TestClient) -> None:
 
 
 def test_full_lifecycle_happy_path(api: TestClient) -> None:
-    # Phase 8: PAID is reached via the payment flow, not a client PAY transition.
+    # PAID is reached via the payment flow, not a client PAY transition.
     ctx = _seed(api, qty=10)
     order = create_order(
         api, ctx["reg"].access, ctx["cust"], [{"product_id": ctx["pid"], "quantity": 2}]

@@ -5,7 +5,7 @@ endpoint accepts a client-supplied business id. Generation, edit, approval,
 rejection and regeneration are OWNER/EMPLOYEE actions (RBAC), consistent with
 ``POST /api/products``. Approval is not PIN-gated: FR-AUTH-03 reserves the
 Business PIN for destructive actions, and creating a product is not one (see
-docs/phase4_schema_decision.md D7).
+docs/history/phase4_schema_decision.md D7).
 """
 
 from __future__ import annotations

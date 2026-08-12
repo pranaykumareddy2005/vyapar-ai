@@ -1,4 +1,4 @@
-"""Conversational AI orchestration layer (Phase 6).
+"""Conversational AI orchestration layer.
 
 Vendor-neutral: it consumes the normalized messaging boundary
 (``IncomingMessage``/``OutgoingMessage``/``MessagingProvider``) and drives the
