@@ -123,7 +123,7 @@ flowchart TD
     BUS --> NOTIF[Notification listener]
     NOTIF --> PG
 
-    SVC -. provider interfaces .-> AI[AI provider - Gemini / mock]
+    SVC -. provider interfaces .-> AI[AI provider - Ollama / Gemini / mock]
     SVC -. provider interfaces .-> PAY[Payment provider - Razorpay / mock]
     SVC -. provider interfaces .-> MSG[Messaging provider - mock]
     SVC -. provider interfaces .-> OBJ[Object storage - S3/MinIO / memory]
@@ -186,15 +186,27 @@ AI is treated as a **suggestion source, not an authority**. Two independent AI
 seams exist, each behind its own `Protocol`:
 
 - **Catalog AI** (`app/catalogai/provider.py`) — `AiProvider`, with a
-  deterministic `MockAiProvider` (dev/test) and a `GeminiAdapter`
-  (`app/catalogai/adapters/gemini.py`).
+  deterministic `MockAiProvider` (dev/test), a `GeminiAdapter`, and a local
+  `OllamaAdapter` (vision) under `app/catalogai/adapters/`.
 - **Conversational AI** (`app/conversation/provider.py`) —
-  `ConversationAiProvider`, with `MockConversationAiProvider` and a
-  `GeminiConversationAdapter` (`app/conversation/adapters/gemini.py`).
+  `ConversationAiProvider`, with `MockConversationAiProvider`, a
+  `GeminiConversationAdapter`, and a local `OllamaConversationAdapter` under
+  `app/conversation/adapters/`.
 
-The provider is selected explicitly via `AI_PROVIDER` (`mock` | `gemini`).
-`gemini` requires `AI_API_KEY` and fails loudly if it is missing; `mock` is
-rejected in a production environment rather than silently used.
+The provider is selected explicitly via `AI_PROVIDER` (`mock` | `gemini` |
+`ollama`). `gemini` requires `AI_API_KEY`; `ollama` runs fully locally (no
+credentials) and reads per-workload model names from `OLLAMA_*` settings; `mock`
+is rejected in a production environment rather than silently used. There is never
+a silent fallback between providers.
+
+**Local inference (Ollama) & multilingual.** The assistant understands requests
+in **English, Telugu, and Hindi** (native script, romanized, and code-mixed) and
+replies in the user's language, while all numbers/prices/stock come only from the
+domain services. Reply language is derived deterministically from the user's text,
+not the model, so it cannot be spoofed. See `docs/ai/ollama.md`,
+`docs/ai/model_selection.md`, `docs/ai/multilingual.md`, and the measured
+`docs/ai/evaluation_report.md` (reproduce with `python -m evals.run_eval
+--provider ollama`).
 
 The conversational execution flow makes the boundary explicit:
 
@@ -292,7 +304,7 @@ configuration:
 
 | Interface | Purpose | Implemented adapters | Selection |
 |---|---|---|---|
-| `AiProvider` / `ConversationAiProvider` | AI catalog + conversational intent | `mock`, `GeminiAdapter` | `AI_PROVIDER` |
+| `AiProvider` / `ConversationAiProvider` | AI catalog + conversational intent | `mock`, `GeminiAdapter`, `OllamaAdapter` (local) | `AI_PROVIDER` |
 | `PaymentProvider` | Payment gateway | `mock`, `RazorpayAdapter` | `PAYMENT_PROVIDER` |
 | `MessagingProvider` | Outbound/inbound messaging | `mock` only | `MESSAGING_PROVIDER` |
 | `ObjectStorage` | Binary storage (images, PDFs) | in-memory, S3/MinIO | `STORAGE_BACKEND` |
@@ -305,10 +317,14 @@ The composition root (`app/providers.py`) constructs these singletons.
 Selection is explicit and **fails loudly** in production if a mock is requested
 where a real adapter is required — there is no silent fallback.
 
-> **Note on live verification:** the Gemini and Razorpay adapters exist in code,
-> but this documentation does **not** claim they were verified against live
-> credentials. The `whatsapp` messaging provider is **not implemented** —
-> selecting it raises `NotImplementedError`.
+> **Note on live verification:** the **Ollama** conversation path has been run
+> against a real local model (`qwen2.5:7b`) — see `docs/ai/evaluation_report.md`.
+> The **Gemini** and **Razorpay** adapters exist in code but are HTTP-mock-tested
+> only; this documentation does **not** claim they were verified against live
+> credentials. The Ollama **vision** (catalog) path and embedding client are
+> implemented and unit-tested against mocked HTTP but not benchmarked live. The
+> `whatsapp` messaging provider is **not implemented** — selecting it raises
+> `NotImplementedError`.
 
 ## Storage
 
@@ -352,9 +368,9 @@ vyapar-ai/
 │   ├── auth/            # authentication, JWT, RBAC, PIN
 │   ├── business/        # business profile & settings
 │   ├── catalog/         # categories, products, images
-│   ├── catalogai/       # AI catalog drafts (adapters/: gemini)
+│   ├── catalogai/       # AI catalog drafts (adapters/: gemini, ollama)
 │   ├── inventory/       # stock records & movements
-│   ├── conversation/    # conversational intent pipeline (adapters/: gemini)
+│   ├── conversation/    # conversational intent pipeline (adapters/: gemini, ollama); multilingual EN/TE/HI
 │   ├── customer/        # customers & addresses
 │   ├── order/           # orders & state machine
 │   ├── payment/         # payments (adapters/: razorpay)
@@ -391,7 +407,7 @@ vyapar-ai/
 | Database | PostgreSQL 16 |
 | Supporting store | Redis 7 (refresh-token revocation) |
 | Object storage | MinIO / S3-compatible (boto3) |
-| AI | Gemini via provider abstraction (mock default) |
+| AI | Local Ollama or Gemini via provider abstraction (mock default) |
 | Payments | Razorpay via provider abstraction (mock default) |
 | Authentication | JWT (PyJWT), bcrypt (passlib) |
 | PDF | ReportLab |
@@ -451,10 +467,15 @@ committed.
 | `JWT_ACCESS_TTL_SECONDS` | Access-token lifetime | No |
 | `MESSAGING_PROVIDER` | `mock` \| `whatsapp` (`whatsapp` not implemented) | No (default `mock`) |
 | `WA_VERIFY_TOKEN` / `WA_API_TOKEN` / `WA_PHONE_NUMBER_ID` | WhatsApp config (unused until implemented) | No |
-| `AI_PROVIDER` | `mock` \| `gemini` | No (default `mock`) |
+| `AI_PROVIDER` | `mock` \| `gemini` \| `ollama` | No (default `mock`) |
 | `AI_API_KEY` | Gemini API key (required when `AI_PROVIDER=gemini`) | Conditional |
-| `AI_MODEL` | AI model id | No |
+| `AI_MODEL` | Gemini model id | No |
 | `AI_CONFIDENCE_THRESHOLD` | Minimum confidence for actionable intents | No (default `0.6`) |
+| `OLLAMA_BASE_URL` | Ollama server URL (when `AI_PROVIDER=ollama`) | Conditional |
+| `OLLAMA_CONVERSATION_MODEL` | Intent/chat model (default `qwen2.5:7b`) | No |
+| `OLLAMA_CATALOG_MODEL` | Vision model for catalog drafts (default `qwen2.5vl:3b`) | No |
+| `OLLAMA_EMBEDDING_MODEL` | Embedding model (default `mxbai-embed-large`; unwired) | No |
+| `OLLAMA_REQUEST_TIMEOUT_SECONDS` | Ollama request timeout (default `60`) | No |
 | `PAYMENT_PROVIDER` | `mock` \| `razorpay` | No (default `mock`) |
 | `RZP_KEY` / `RZP_SECRET` | Razorpay credentials (required when `PAYMENT_PROVIDER=razorpay`) | Conditional |
 | `DEFAULT_TAX_RATE` | Configurable order tax rate (no hard-coded GST) | No (default `0.0`) |
@@ -562,9 +583,9 @@ pytest --cov=app --cov-report=term-missing
 | Foundation | Implemented |
 | Authentication & Business | Implemented |
 | Catalog | Implemented |
-| AI Catalog Generation | Implemented (Gemini adapter present; live credentials not verified) |
+| AI Catalog Generation | Implemented (mock, Gemini, and local Ollama vision adapters; Ollama vision not benchmarked live) |
 | Inventory | Implemented |
-| Conversational AI | Implemented (mock + Gemini adapter; live credentials not verified) |
+| Conversational AI | Implemented, multilingual EN/TE/HI; **run live on local Ollama `qwen2.5:7b`** (Gemini adapter mock-tested only) |
 | Customers & Orders | Implemented |
 | Payments | Implemented (Razorpay adapter present; live gateway not verified) |
 | Invoices | Implemented (records + PDF) |
@@ -578,8 +599,10 @@ pytest --cov=app --cov-report=term-missing
 
 These are actual limitations verified against the repository:
 
-- **No live external verification** — the Gemini and Razorpay adapters exist but
-  are not documented as tested against live credentials/gateways.
+- **No live external verification (hosted providers)** — the Gemini and Razorpay
+  adapters exist but are not documented as tested against live credentials/
+  gateways. (The **local Ollama** conversation path *has* been run live — see
+  `docs/ai/evaluation_report.md`.)
 - **WhatsApp/Meta not implemented** — selecting `MESSAGING_PROVIDER=whatsapp`
   raises `NotImplementedError`; the conversational pipeline runs through the
   `MessagingProvider` boundary, not WhatsApp.

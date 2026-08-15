@@ -18,6 +18,7 @@ from app.common.exceptions import DomainError
 from app.common.messaging import IncomingMessage, MessagingProvider, OutgoingMessage
 from app.conversation import responses
 from app.conversation.handlers import HandlerResult, Outcome, build_registry
+from app.conversation.language import resolve_response_language
 from app.conversation.provider import ConversationAiError, ConversationAiProvider
 from app.conversation.schemas import IntentType
 from app.inventory.service import InventoryService
@@ -54,36 +55,54 @@ class ConversationService:
         self, incoming: IncomingMessage, *, actor_user_id: int | None = None
     ) -> ConversationOutcome:
         text = (incoming.text or "").strip()
+        # Reply language is derived from the user's own text (script-based),
+        # independent of the model, so it can neither be spoofed nor change the
+        # business operation. Computed up front so even pre-resolve error replies
+        # are localized.
+        language = resolve_response_language(text)
         if not text:
             return self._finish(
-                incoming, HandlerResult(responses.empty_message(), Outcome.CLARIFICATION), None
+                incoming,
+                HandlerResult(responses.empty_message(language), Outcome.CLARIFICATION),
+                None,
             )
 
         try:
             resolved = self._provider.resolve(text)
         except ConversationAiError as exc:
             logger.warning("conversation AI provider failed: %s", exc.code)
-            return self._finish(incoming, HandlerResult(responses.ai_error(), Outcome.ERROR), None)
+            return self._finish(
+                incoming, HandlerResult(responses.ai_error(language), Outcome.ERROR), None
+            )
+
+        # For Latin/undetermined text, honour the model's language hint (e.g.
+        # romanized Telugu/Hindi); script evidence in the text always wins.
+        language = resolve_response_language(text, resolved.language)
 
         # Low-confidence actionable intents never execute (plan item 11).
         if resolved.intent in _ACTIONABLE and resolved.confidence < self._threshold:
             return self._finish(
                 incoming,
-                HandlerResult(responses.low_confidence(), Outcome.CLARIFICATION),
+                HandlerResult(responses.low_confidence(language), Outcome.CLARIFICATION),
                 resolved.intent,
             )
 
         handler = self._registry[resolved.intent]
         try:
-            result = handler.handle(incoming.business_id, resolved, actor_user_id=actor_user_id)
+            result = handler.handle(
+                incoming.business_id,
+                resolved,
+                actor_user_id=actor_user_id,
+                language=language,
+            )
         except DomainError as exc:
             # Backstop: handlers catch their expected domain errors; anything else
             # becomes a generic controlled reply (never leaks internals).
             logger.info("conversation domain error: %s", exc.code)
-            result = HandlerResult(responses.internal_error(), Outcome.ERROR)
+            result = HandlerResult(responses.internal_error(language), Outcome.ERROR)
         except Exception:
             logger.exception("conversation handler crashed")
-            result = HandlerResult(responses.internal_error(), Outcome.ERROR)
+            result = HandlerResult(responses.internal_error(language), Outcome.ERROR)
 
         return self._finish(incoming, result, resolved.intent)
 

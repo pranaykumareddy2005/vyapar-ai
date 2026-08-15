@@ -71,6 +71,14 @@ def build_ai_provider(settings: Settings) -> AiProvider:
             model=settings.ai_model,
             timeout=settings.ai_request_timeout_seconds,
         )
+    if settings.ai_provider == "ollama":
+        from app.catalogai.adapters.ollama import OllamaAdapter
+
+        return OllamaAdapter(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_catalog_model,
+            timeout=settings.ollama_request_timeout_seconds,
+        )
     if settings.is_production:
         raise AiProviderConfigError(
             "AI_PROVIDER=mock is not permitted in production; set AI_PROVIDER=gemini"
@@ -97,6 +105,14 @@ def build_conversation_ai_provider(settings: Settings) -> ConversationAiProvider
             api_key=settings.ai_api_key,
             model=settings.ai_model,
             timeout=settings.ai_request_timeout_seconds,
+        )
+    if settings.ai_provider == "ollama":
+        from app.conversation.adapters.ollama import OllamaConversationAdapter
+
+        return OllamaConversationAdapter(
+            base_url=settings.ollama_base_url,
+            model=settings.ollama_conversation_model,
+            timeout=settings.ollama_request_timeout_seconds,
         )
     if settings.is_production:
         raise ConversationAiConfigError(

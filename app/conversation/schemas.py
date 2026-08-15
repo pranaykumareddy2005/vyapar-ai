@@ -34,6 +34,18 @@ class StockDirection(enum.StrEnum):
     DECREASE = "DECREASE"
 
 
+class Language(enum.StrEnum):
+    """Languages the conversational layer understands and can reply in.
+
+    Language is metadata only: it never changes which business operation runs or
+    which record is touched. The database and domain models stay language-neutral.
+    """
+
+    EN = "en"
+    TE = "te"
+    HI = "hi"
+
+
 class IntentEntities(BaseModel):
     """Entities extracted by the AI. Intentionally has no id/tenant fields."""
 
@@ -81,6 +93,35 @@ class ResolvedIntent(BaseModel):
     entities: IntentEntities = Field(default_factory=IntentEntities)
     # Optional clarification prompt the model may supply; never chain-of-thought.
     clarification: str | None = Field(default=None, max_length=500)
+    # The language the model believes the user wrote in. Informational only: the
+    # authoritative reply language is derived from the user's text (see
+    # ``app.conversation.language``), so a spoofed value cannot change behaviour.
+    language: Language = Language.EN
+
+    @field_validator("language", mode="before")
+    @classmethod
+    def _tolerate_unknown_language(cls, value: Any) -> Any:
+        # A model may emit "English", "en-IN", None, etc. Anything unrecognised
+        # falls back to EN rather than failing validation.
+        if value is None:
+            return Language.EN
+        if isinstance(value, Language):
+            return value
+        text = str(value).strip().lower()
+        aliases = {
+            "en": Language.EN,
+            "eng": Language.EN,
+            "english": Language.EN,
+            "te": Language.TE,
+            "tel": Language.TE,
+            "telugu": Language.TE,
+            "hi": Language.HI,
+            "hin": Language.HI,
+            "hindi": Language.HI,
+        }
+        # Handle region tags like "en-IN" / "hi_IN".
+        base = text.replace("_", "-").split("-", 1)[0]
+        return aliases.get(text) or aliases.get(base) or Language.EN
 
 
 # --- API edge ---------------------------------------------------------------

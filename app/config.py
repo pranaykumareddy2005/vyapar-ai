@@ -52,11 +52,31 @@ class Settings(BaseSettings):
     # fixed business rule; below this the engine must ask for clarification.
     ai_confidence_threshold: float = Field(default=0.6, ge=0.0, le=1.0)
     # "mock" wires the deterministic MockAiProvider (dev/test); "gemini" wires the
-    # real GeminiAdapter, which requires AI_API_KEY. Never a silent fallback: the
-    # provider is chosen explicitly.
-    ai_provider: Literal["mock", "gemini"] = "mock"
+    # real GeminiAdapter (requires AI_API_KEY); "ollama" wires the local Ollama
+    # adapters (no external credentials). Never a silent fallback: the provider is
+    # chosen explicitly and an unsupported production provider fails loudly.
+    ai_provider: Literal["mock", "gemini", "ollama"] = "mock"
     ai_model: str = "gemini-1.5-flash"
     ai_request_timeout_seconds: float = Field(default=30.0, gt=0.0)
+
+    # --- Ollama (local inference) -----------------------------------------
+    # Ollama is a concrete implementation of the AI-provider abstraction; the
+    # domain layer never imports it. Models are configurable per workload so no
+    # model name is hard-coded in the codebase. Defaults are sized for a modest
+    # local GPU (~6 GB VRAM) / CPU fallback.
+    ollama_base_url: str = "http://localhost:11434"
+    # Instruction model for intent classification + multilingual chat. qwen2.5:7b
+    # is instruction-tuned, reliable at strict JSON, and strong on Hindi/Telugu;
+    # its ~4.7 GB Q4 weights fit a ~6 GB GPU. Swap to a 3B model (e.g. llama3.2:3b
+    # or qwen2.5:3b-instruct) for lower latency where accuracy can be traded off.
+    ollama_conversation_model: str = "qwen2.5:7b"
+    # Vision model for catalog draft generation from a product image.
+    ollama_catalog_model: str = "qwen2.5vl:3b"
+    # Embedding model reserved for future multilingual semantic product search.
+    ollama_embedding_model: str = "mxbai-embed-large"
+    # Separate, slightly longer timeout: local models can be slower to first token
+    # than a hosted API, especially on a cold start / CPU fallback.
+    ollama_request_timeout_seconds: float = Field(default=60.0, gt=0.0)
 
     # --- Payments ---------------------------------------------------------
     # "mock" wires the deterministic MockPaymentProvider (dev/test); "razorpay"

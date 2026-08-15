@@ -50,6 +50,27 @@ services:
       timeout: 5s
       retries: 10
 
+  # Optional local LLM runtime. Kept behind the "ollama" profile so it never runs
+  # by default and is never baked into the app image. Start it explicitly with:
+  #   docker compose --profile ollama up -d ollama
+  # then set OLLAMA_BASE_URL=http://ollama:11434 and AI_PROVIDER=ollama in .env.
+  # On a machine that already runs Ollama on the host, skip this service and point
+  # OLLAMA_BASE_URL at http://host.docker.internal:11434 instead. GPU passthrough
+  # is host/driver specific and intentionally not configured here.
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -70,3 +91,4 @@ services:
 volumes:
   pgdata:
   miniodata:
+  ollamadata:

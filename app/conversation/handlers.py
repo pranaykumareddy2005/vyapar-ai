@@ -16,7 +16,7 @@ from app.catalog.service import CatalogService
 from app.common.exceptions import InsufficientStockError, NotFoundError
 from app.conversation import responses
 from app.conversation.resolver import ProductResolver
-from app.conversation.schemas import IntentType, ResolvedIntent, StockDirection
+from app.conversation.schemas import IntentType, Language, ResolvedIntent, StockDirection
 from app.inventory.models import MovementType
 from app.inventory.service import InventoryService
 
@@ -38,7 +38,12 @@ class HandlerResult:
 
 class IntentHandler(Protocol):
     def handle(
-        self, business_id: int, intent: ResolvedIntent, *, actor_user_id: int | None
+        self,
+        business_id: int,
+        intent: ResolvedIntent,
+        *,
+        actor_user_id: int | None,
+        language: Language = Language.EN,
     ) -> HandlerResult: ...
 
 
@@ -47,15 +52,20 @@ class SearchProductHandler:
         self._resolver = resolver
 
     def handle(
-        self, business_id: int, intent: ResolvedIntent, *, actor_user_id: int | None
+        self,
+        business_id: int,
+        intent: ResolvedIntent,
+        *,
+        actor_user_id: int | None,
+        language: Language = Language.EN,
     ) -> HandlerResult:
         query = intent.entities.product_query
         if not query:
-            return HandlerResult(responses.missing_search_product(), Outcome.CLARIFICATION)
+            return HandlerResult(responses.missing_search_product(language), Outcome.CLARIFICATION)
         matches = self._resolver.resolve(business_id, query)
         if not matches:
-            return HandlerResult(responses.not_found(query), Outcome.NOT_FOUND)
-        return HandlerResult(responses.search_results(matches), Outcome.EXECUTED)
+            return HandlerResult(responses.not_found(query, language), Outcome.NOT_FOUND)
+        return HandlerResult(responses.search_results(matches, language), Outcome.EXECUTED)
 
 
 class GetStockHandler:
@@ -64,23 +74,30 @@ class GetStockHandler:
         self._inventory = inventory
 
     def handle(
-        self, business_id: int, intent: ResolvedIntent, *, actor_user_id: int | None
+        self,
+        business_id: int,
+        intent: ResolvedIntent,
+        *,
+        actor_user_id: int | None,
+        language: Language = Language.EN,
     ) -> HandlerResult:
         query = intent.entities.product_query
         if not query:
-            return HandlerResult(responses.missing_search_product(), Outcome.CLARIFICATION)
+            return HandlerResult(responses.missing_search_product(language), Outcome.CLARIFICATION)
         matches = self._resolver.resolve(business_id, query)
         if not matches:
-            return HandlerResult(responses.not_found(query), Outcome.NOT_FOUND)
+            return HandlerResult(responses.not_found(query, language), Outcome.NOT_FOUND)
         if len(matches) > 1:
-            return HandlerResult(responses.multiple_matches(query, matches), Outcome.CLARIFICATION)
+            return HandlerResult(
+                responses.multiple_matches(query, matches, language), Outcome.CLARIFICATION
+            )
         product = matches[0]
         try:
             inventory = self._inventory.get_inventory_by_product(business_id, product.id)
         except NotFoundError:
-            return HandlerResult(responses.no_inventory(product.name), Outcome.NOT_FOUND)
+            return HandlerResult(responses.no_inventory(product.name, language), Outcome.NOT_FOUND)
         return HandlerResult(
-            responses.stock_level(product.name, inventory.quantity), Outcome.EXECUTED
+            responses.stock_level(product.name, inventory.quantity, language), Outcome.EXECUTED
         )
 
 
@@ -90,24 +107,31 @@ class AdjustStockHandler:
         self._inventory = inventory
 
     def handle(
-        self, business_id: int, intent: ResolvedIntent, *, actor_user_id: int | None
+        self,
+        business_id: int,
+        intent: ResolvedIntent,
+        *,
+        actor_user_id: int | None,
+        language: Language = Language.EN,
     ) -> HandlerResult:
         entities = intent.entities
         if not entities.product_query:
-            return HandlerResult(responses.missing_product(), Outcome.CLARIFICATION)
+            return HandlerResult(responses.missing_product(language), Outcome.CLARIFICATION)
         increasing = entities.direction is not StockDirection.DECREASE
         if entities.quantity is None:
             return HandlerResult(
-                responses.missing_quantity(entities.product_query, increasing),
+                responses.missing_quantity(entities.product_query, increasing, language),
                 Outcome.CLARIFICATION,
             )
 
         matches = self._resolver.resolve(business_id, entities.product_query)
         if not matches:
-            return HandlerResult(responses.not_found(entities.product_query), Outcome.NOT_FOUND)
+            return HandlerResult(
+                responses.not_found(entities.product_query, language), Outcome.NOT_FOUND
+            )
         if len(matches) > 1:
             return HandlerResult(
-                responses.multiple_matches(entities.product_query, matches),
+                responses.multiple_matches(entities.product_query, matches, language),
                 Outcome.CLARIFICATION,
             )
         product = matches[0]
@@ -115,7 +139,7 @@ class AdjustStockHandler:
         try:
             current = self._inventory.get_inventory_by_product(business_id, product.id)
         except NotFoundError:
-            return HandlerResult(responses.no_inventory(product.name), Outcome.NOT_FOUND)
+            return HandlerResult(responses.no_inventory(product.name, language), Outcome.NOT_FOUND)
 
         delta = entities.quantity if increasing else -entities.quantity
         movement_type = entities.movement_type or (
@@ -131,27 +155,39 @@ class AdjustStockHandler:
             )
         except InsufficientStockError:
             return HandlerResult(
-                responses.insufficient_stock(product.name, entities.quantity, current.quantity),
+                responses.insufficient_stock(
+                    product.name, entities.quantity, current.quantity, language
+                ),
                 Outcome.REJECTED,
             )
         return HandlerResult(
-            responses.adjusted(product.name, delta, updated.quantity), Outcome.EXECUTED
+            responses.adjusted(product.name, delta, updated.quantity, language), Outcome.EXECUTED
         )
 
 
 class UnsupportedHandler:
     def handle(
-        self, business_id: int, intent: ResolvedIntent, *, actor_user_id: int | None
+        self,
+        business_id: int,
+        intent: ResolvedIntent,
+        *,
+        actor_user_id: int | None,
+        language: Language = Language.EN,
     ) -> HandlerResult:
-        return HandlerResult(responses.unsupported(), Outcome.UNSUPPORTED)
+        return HandlerResult(responses.unsupported(language), Outcome.UNSUPPORTED)
 
 
 class ClarificationHandler:
     def handle(
-        self, business_id: int, intent: ResolvedIntent, *, actor_user_id: int | None
+        self,
+        business_id: int,
+        intent: ResolvedIntent,
+        *,
+        actor_user_id: int | None,
+        language: Language = Language.EN,
     ) -> HandlerResult:
         return HandlerResult(
-            intent.clarification or responses.low_confidence(), Outcome.CLARIFICATION
+            intent.clarification or responses.low_confidence(language), Outcome.CLARIFICATION
         )
 
 
