@@ -62,9 +62,11 @@ Vyapar AI consolidates these concerns into one backend built around a few ideas:
 - **Read-only analytics** computed directly from the transactional tables, and a
   dashboard that composes them into a single view.
 
-External messaging delivery (WhatsApp/Meta) is **not** part of the current
-implementation; see [Current status](#current-status) and
-[Known limitations](#known-limitations).
+Real **WhatsApp / Meta Cloud API** integration is implemented: an inbound webhook
+(`/webhooks/whatsapp`) normalizes Meta payloads and runs them through the same
+conversation → catalogue → domain pipeline, and `MetaWhatsAppProvider` sends
+replies back. See [`docs/whatsapp.md`](docs/whatsapp.md). Live inbound requires a
+public HTTPS webhook (Meta cannot reach `localhost`).
 
 ## Key capabilities
 
@@ -306,7 +308,7 @@ configuration:
 |---|---|---|---|
 | `AiProvider` / `ConversationAiProvider` | AI catalog + conversational intent | `mock`, `GeminiAdapter`, `OllamaAdapter` (local) | `AI_PROVIDER` |
 | `PaymentProvider` | Payment gateway | `mock`, `RazorpayAdapter` | `PAYMENT_PROVIDER` |
-| `MessagingProvider` | Outbound/inbound messaging | `mock` only | `MESSAGING_PROVIDER` |
+| `MessagingProvider` | Outbound/inbound messaging | `mock`, `MetaWhatsAppProvider` (Meta Cloud API) | `MESSAGING_PROVIDER` |
 | `ObjectStorage` | Binary storage (images, PDFs) | in-memory, S3/MinIO | `STORAGE_BACKEND` |
 
 ```
@@ -323,8 +325,9 @@ where a real adapter is required — there is no silent fallback.
 > only; this documentation does **not** claim they were verified against live
 > credentials. The Ollama **vision** (catalog) path and embedding client are
 > implemented and unit-tested against mocked HTTP but not benchmarked live. The
-> `whatsapp` messaging provider is **not implemented** — selecting it raises
-> `NotImplementedError`.
+> **Meta WhatsApp** provider and webhook are implemented and tested against mocked
+> HTTP + a full webhook integration suite; a live round-trip requires a public
+> HTTPS webhook and your own Meta credentials (see `docs/whatsapp.md`).
 
 ## Storage
 
@@ -465,8 +468,8 @@ committed.
 | `REDIS_URL` | Redis connection URL | Yes (staging/production) |
 | `JWT_SECRET` | JWT signing secret | Yes (strong value outside dev) |
 | `JWT_ACCESS_TTL_SECONDS` | Access-token lifetime | No |
-| `MESSAGING_PROVIDER` | `mock` \| `whatsapp` (`whatsapp` not implemented) | No (default `mock`) |
-| `WA_VERIFY_TOKEN` / `WA_API_TOKEN` / `WA_PHONE_NUMBER_ID` | WhatsApp config (unused until implemented) | No |
+| `MESSAGING_PROVIDER` | `mock` \| `meta` (real Meta WhatsApp Cloud API; alias `whatsapp`) | No (default `mock`) |
+| `WA_VERIFY_TOKEN` / `WA_API_TOKEN` / `WA_PHONE_NUMBER_ID` / `WA_BUSINESS_ACCOUNT_ID` / `WA_APP_SECRET` / `WA_API_VERSION` | WhatsApp/Meta config (see `docs/whatsapp.md`); required when `MESSAGING_PROVIDER=meta` | No |
 | `AI_PROVIDER` | `mock` \| `gemini` \| `ollama` | No (default `mock`) |
 | `AI_API_KEY` | Gemini API key (required when `AI_PROVIDER=gemini`) | Conditional |
 | `AI_MODEL` | Gemini model id | No |
@@ -592,8 +595,8 @@ pytest --cov=app --cov-report=term-missing
 | Notifications | Implemented (in-app only) |
 | Analytics | Implemented |
 | Dashboard | Implemented |
-| WhatsApp / Meta integration | Not implemented (deferred) |
-| External notification delivery (WhatsApp/email) | Not implemented (deferred) |
+| WhatsApp / Meta integration | Implemented (webhook + Meta Cloud API provider); mock-tested + full webhook integration suite; live inbound needs a public HTTPS tunnel/host |
+| External notification delivery (WhatsApp/email) | Not implemented (in-app notifications only) |
 
 ## Known limitations
 
@@ -603,9 +606,12 @@ These are actual limitations verified against the repository:
   adapters exist but are not documented as tested against live credentials/
   gateways. (The **local Ollama** conversation path *has* been run live — see
   `docs/ai/evaluation_report.md`.)
-- **WhatsApp/Meta not implemented** — selecting `MESSAGING_PROVIDER=whatsapp`
-  raises `NotImplementedError`; the conversational pipeline runs through the
-  `MessagingProvider` boundary, not WhatsApp.
+- **WhatsApp/Meta live inbound needs a public endpoint** — the provider, webhook,
+  parser, dedup, and tenant mapping are implemented and tested (mock HTTP + full
+  webhook integration suite), but Meta can only deliver to a public HTTPS URL, so
+  the real inbound round-trip must be run behind a tunnel/host (see
+  `docs/whatsapp.md`). Inbound image → catalogue draft is intentionally not
+  enabled over WhatsApp (no merchant RBAC on the channel).
 - **In-process event delivery** — the `EventBus` has no outbox or broker; a
   crash between a domain commit and the notification write loses that
   notification. Not durable messaging.
@@ -621,8 +627,9 @@ These are actual limitations verified against the repository:
 
 Clearly separate from what is implemented today. Potential future work:
 
-- WhatsApp/Meta integration (real messaging provider adapter).
-- External notification delivery channels (WhatsApp, email).
+- WhatsApp notification delivery channel (order/payment/low-stock events over
+  WhatsApp templates) building on the implemented `MetaWhatsAppProvider`.
+- External notification delivery channels (email).
 - Stronger event-delivery guarantees (transactional outbox / broker).
 - Live verification and hardening of the AI and payment adapters.
 - Additional conversational workflows beyond search/stock lookup/adjustment.

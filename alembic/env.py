@@ -24,6 +24,7 @@ from app.invoice import models as _invoice_models  # noqa: F401
 from app.notification import models as _notification_models  # noqa: F401
 from app.order import models as _order_models  # noqa: F401
 from app.payment import models as _payment_models  # noqa: F401
+from app.whatsapp import models as _whatsapp_models  # noqa: F401
 from sqlalchemy import engine_from_config, pool
 
 config = context.config

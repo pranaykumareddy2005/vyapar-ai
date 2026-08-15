@@ -36,6 +36,15 @@ class Business(TimestampMixin, Base):
             unique=True,
             postgresql_where="whatsapp_number IS NOT NULL",
         ),
+        # A Meta WhatsApp phone-number-id maps to at most one business, so an
+        # inbound webhook resolves its tenant deterministically (server-side
+        # trust). Partial-unique over non-null values, mirroring the number index.
+        Index(
+            "uq_business_wa_phone_number_id",
+            "whatsapp_phone_number_id",
+            unique=True,
+            postgresql_where="whatsapp_phone_number_id IS NOT NULL",
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -46,6 +55,11 @@ class Business(TimestampMixin, Base):
 
     # Linked in a later onboarding step (FR-BUS-02); unique only when set.
     whatsapp_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    # Meta WhatsApp Cloud API "phone_number_id" (the numeric asset id of the
+    # business's WhatsApp line, distinct from the E.164 number above). Set when
+    # the merchant connects WhatsApp; the webhook uses it to resolve the tenant.
+    whatsapp_phone_number_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Business PIN (FR-AUTH-03) - bcrypt hash, set after onboarding. Never
     # serialized or logged.

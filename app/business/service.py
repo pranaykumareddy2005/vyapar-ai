@@ -58,6 +58,25 @@ class BusinessService:
         self._session.refresh(business)
         return business
 
+    def link_whatsapp_phone_number_id(self, business_id: int, phone_number_id: str) -> Business:
+        """Map a Meta WhatsApp ``phone_number_id`` to this business.
+
+        Trusted server-side configuration used by the inbound webhook to resolve
+        the tenant. Rejects a value already linked to a different business.
+        """
+        business = self._require(business_id)
+        existing = self._businesses.phone_number_id_exists(phone_number_id)
+        if existing and business.whatsapp_phone_number_id != phone_number_id:
+            raise ConflictError("whatsapp phone_number_id is already linked to another business")
+        try:
+            business.whatsapp_phone_number_id = phone_number_id
+            self._session.commit()
+        except Exception:
+            self._session.rollback()
+            raise
+        self._session.refresh(business)
+        return business
+
     def update_payment_preference(
         self, business_id: int, preference: PaymentPreference
     ) -> Business:

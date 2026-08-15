@@ -41,6 +41,30 @@ def test_build_mock_provider_from_settings() -> None:
     assert isinstance(provider, MockMessagingProvider)
 
 
-def test_whatsapp_provider_not_implemented() -> None:
-    with pytest.raises(NotImplementedError, match="not implemented"):
-        build_messaging_provider(Settings(messaging_provider="whatsapp"))
+def test_meta_provider_built_from_settings() -> None:
+    # "meta" (and its alias "whatsapp") wire the real Meta adapter when credentials
+    # are present; both resolve to a MessagingProvider.
+    from app.whatsapp.provider import MetaWhatsAppProvider
+
+    for selector in ("meta", "whatsapp"):
+        provider = build_messaging_provider(
+            Settings(
+                messaging_provider=selector,  # type: ignore[arg-type]
+                wa_api_token="test-token",
+                wa_phone_number_id="PNID",
+            )
+        )
+        assert isinstance(provider, MetaWhatsAppProvider)
+        assert isinstance(provider, MessagingProvider)
+
+
+def test_meta_provider_requires_credentials() -> None:
+    from app.whatsapp.provider import MetaWhatsAppConfigError
+
+    with pytest.raises(MetaWhatsAppConfigError):
+        build_messaging_provider(Settings(messaging_provider="meta", wa_api_token=""))
+
+
+def test_mock_rejected_in_production() -> None:
+    with pytest.raises(NotImplementedError, match="not permitted in production"):
+        build_messaging_provider(Settings(environment="production", messaging_provider="mock"))

@@ -43,6 +43,37 @@ class CustomerService:
         self._session.refresh(customer)
         return customer
 
+    def get_or_create_by_phone(
+        self, business_id: int, phone: str, *, name: str | None = None
+    ) -> Customer:
+        """Resolve the WhatsApp sender to a customer within this business.
+
+        Returns the existing active customer for ``phone`` or creates one. The
+        phone comes from the trusted channel (Meta sender), the business from
+        trusted server-side mapping - never from AI/message content. Tolerates a
+        concurrent create by re-reading on a unique-violation.
+        """
+        existing = self._customers.get_active_by_phone(business_id, phone)
+        if existing is not None:
+            return existing
+        try:
+            customer = self._customers.add(
+                Customer(business_id=business_id, name=name or phone, phone=phone)
+            )
+            self._session.commit()
+        except IntegrityError:
+            # A concurrent delivery created the same customer; re-read it.
+            self._session.rollback()
+            found = self._customers.get_active_by_phone(business_id, phone)
+            if found is None:
+                raise
+            return found
+        except Exception:
+            self._session.rollback()
+            raise
+        self._session.refresh(customer)
+        return customer
+
     def get(self, business_id: int, customer_id: int) -> Customer:
         customer = self._customers.get(business_id, customer_id)
         if customer is None:

@@ -33,12 +33,26 @@ from app.redis_client import get_redis
 
 
 def build_messaging_provider(settings: Settings) -> MessagingProvider:
-    """Select the messaging provider from configuration."""
-    if settings.messaging_provider == "whatsapp":
-        # A WhatsApp/Meta adapter is not yet implemented. Fail loudly rather
-        # than silently degrading to the mock in a real environment.
+    """Select the messaging provider from configuration (Adapter/Factory).
+
+    ``meta`` (alias ``whatsapp``) wires the real Meta WhatsApp Cloud API adapter,
+    which requires WA_API_TOKEN + WA_PHONE_NUMBER_ID and fails loudly if missing.
+    Chosen explicitly; never a silent fallback to the mock in production.
+    """
+    if settings.messaging_provider in ("meta", "whatsapp"):
+        # Imported lazily so the mock path never imports the vendor adapter.
+        from app.whatsapp.provider import MetaWhatsAppProvider
+
+        return MetaWhatsAppProvider(
+            access_token=settings.wa_api_token,
+            phone_number_id=settings.wa_phone_number_id,
+            api_base=settings.wa_api_base,
+            api_version=settings.wa_api_version,
+            timeout=settings.wa_request_timeout_seconds,
+        )
+    if settings.is_production:
         raise NotImplementedError(
-            "WhatsAppMessagingProvider is not implemented; set MESSAGING_PROVIDER=mock."
+            "MESSAGING_PROVIDER=mock is not permitted in production; set MESSAGING_PROVIDER=meta."
         )
     return MockMessagingProvider()
 

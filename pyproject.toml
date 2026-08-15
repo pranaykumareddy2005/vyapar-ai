@@ -69,6 +69,10 @@ ignore = ["B008"]  # FastAPI Depends() in defaults is idiomatic
 "alembic/versions/*" = ["E501", "I001"]
 # conftest sets os.environ before importing app modules by design.
 "tests/conftest.py" = ["E402"]
+# WhatsApp UX copy intentionally uses emoji symbols (+, -, x) that RUF001 flags as
+# ambiguous; they are deliberate button/label glyphs, not code.
+"app/whatsapp/menus.py" = ["RUF001"]
+"app/whatsapp/shop_flow.py" = ["RUF001"]
 
 [tool.mypy]
 python_version = "3.12"

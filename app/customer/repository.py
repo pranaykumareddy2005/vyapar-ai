@@ -35,6 +35,14 @@ class CustomerRepository:
         )
         return list(self._session.scalars(stmt).all())
 
+    def get_active_by_phone(self, business_id: int, phone: str) -> Customer | None:
+        stmt = select(Customer).where(
+            Customer.business_id == business_id,
+            Customer.phone == phone,
+            Customer.is_deleted.is_(False),
+        )
+        return self._session.scalars(stmt).one_or_none()
+
     def active_phone_exists(
         self, business_id: int, phone: str, *, exclude_customer_id: int | None = None
     ) -> bool:

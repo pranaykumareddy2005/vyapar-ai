@@ -24,6 +24,8 @@ from typing import Protocol, runtime_checkable
 class MessageType(enum.StrEnum):
     TEXT = "text"
     IMAGE = "image"
+    # A tap on a reply button or a list-menu row (WhatsApp interactive reply).
+    INTERACTIVE = "interactive"
     UNSUPPORTED = "unsupported"
 
 
@@ -92,12 +94,72 @@ class MockMessagingProvider:
 
     def __init__(self) -> None:
         self.sent: list[OutgoingMessage] = []
+        # Records for the richer WhatsApp channel surface (buttons/lists/media).
+        self.buttons: list[dict[str, object]] = []
+        self.lists: list[dict[str, object]] = []
+        self.images: list[dict[str, object]] = []
+        self.documents: list[dict[str, object]] = []
+        self.uploads: list[dict[str, object]] = []
+        self.read_receipts: list[str] = []
         self._counter = 0
 
-    def send(self, message: OutgoingMessage) -> SendResult:
+    def _next_id(self) -> str:
         self._counter += 1
+        return f"mock-{self._counter}"
+
+    def send(self, message: OutgoingMessage) -> SendResult:
         self.sent.append(message)
-        return SendResult(provider_message_id=f"mock-{self._counter}", accepted=True)
+        return SendResult(provider_message_id=self._next_id(), accepted=True)
+
+    def send_buttons(
+        self,
+        recipient_phone: str,
+        *,
+        body: str,
+        buttons: list[tuple[str, str]],
+        header: str | None = None,
+    ) -> SendResult:
+        self.buttons.append({"to": recipient_phone, "body": body, "buttons": buttons})
+        return SendResult(provider_message_id=self._next_id(), accepted=True)
+
+    def send_list(
+        self,
+        recipient_phone: str,
+        *,
+        body: str,
+        button_text: str,
+        rows: list[tuple[str, str, str | None]],
+        header: str | None = None,
+        section_title: str = "Options",
+    ) -> SendResult:
+        self.lists.append({"to": recipient_phone, "body": body, "rows": rows})
+        return SendResult(provider_message_id=self._next_id(), accepted=True)
+
+    def send_image(
+        self, recipient_phone: str, *, media_id: str, caption: str | None = None
+    ) -> SendResult:
+        self.images.append({"to": recipient_phone, "media_id": media_id, "caption": caption})
+        return SendResult(provider_message_id=self._next_id(), accepted=True)
+
+    def send_document(
+        self, recipient_phone: str, *, media_id: str, filename: str, caption: str | None = None
+    ) -> SendResult:
+        self.documents.append({"to": recipient_phone, "media_id": media_id, "filename": filename})
+        return SendResult(provider_message_id=self._next_id(), accepted=True)
+
+    def upload_media(self, data: bytes, *, filename: str, mime_type: str) -> str:
+        self._counter += 1
+        media_id = f"mock-media-{self._counter}"
+        self.uploads.append({"media_id": media_id, "filename": filename, "bytes": len(data)})
+        return media_id
+
+    def download_media(self, media_id: str) -> tuple[bytes, str]:
+        # Deterministic fake image so the seller catalogue flow is testable offline.
+        return b"\xff\xd8\xff\xe0mock-image-bytes", "image/jpeg"
+
+    def mark_read(self, message_id: str) -> bool:
+        self.read_receipts.append(message_id)
+        return True
 
     def last_to(self, phone: str) -> OutgoingMessage | None:
         """Return the most recent message sent to ``phone`` (test helper)."""
@@ -108,4 +170,10 @@ class MockMessagingProvider:
 
     def clear(self) -> None:
         self.sent.clear()
+        self.buttons.clear()
+        self.lists.clear()
+        self.images.clear()
+        self.documents.clear()
+        self.uploads.clear()
+        self.read_receipts.clear()
         self._counter = 0

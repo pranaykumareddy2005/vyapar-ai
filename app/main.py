@@ -38,6 +38,7 @@ def create_app() -> FastAPI:
     from app.notification.router import router as notification_router
     from app.order.router import router as order_router
     from app.payment.router import router as payment_router
+    from app.whatsapp.router import router as whatsapp_router
 
     app.include_router(auth_router)
     app.include_router(business_router)
@@ -52,6 +53,9 @@ def create_app() -> FastAPI:
     app.include_router(notification_router)
     app.include_router(analytics_router)
     app.include_router(dashboard_router)
+    # Public inbound channel (Meta cannot present a JWT); trust via verify token
+    # + request signature, enforced inside the router.
+    app.include_router(whatsapp_router)
 
     @app.get("/healthz", tags=["health"])
     def healthz() -> dict[str, str]:

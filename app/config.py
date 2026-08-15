@@ -39,12 +39,25 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_seconds: int = 60 * 60 * 24 * 14
 
     # --- Messaging (WhatsApp) ---------------------------------------------
-    # "mock" wires MockMessagingProvider. "whatsapp" is reserved for a future
-    # WhatsApp/Meta adapter and is not yet implemented (selecting it raises).
-    messaging_provider: Literal["mock", "whatsapp"] = "mock"
+    # "mock" wires MockMessagingProvider (dev/test). "meta" (alias "whatsapp")
+    # wires the real MetaWhatsAppProvider over the Meta WhatsApp Cloud API, which
+    # requires WA_API_TOKEN + WA_PHONE_NUMBER_ID. Chosen explicitly; never a silent
+    # fallback to the mock in production.
+    messaging_provider: Literal["mock", "whatsapp", "meta"] = "mock"
+    # Webhook GET-verification token (Meta echoes hub.challenge when it matches).
     wa_verify_token: str = "dev-verify-token"
+    # Graph API access token (SECRET) - never logged or serialized.
     wa_api_token: str = ""
+    # The Meta asset id of the business's WhatsApp line (NOT the E.164 number).
     wa_phone_number_id: str = ""
+    # WhatsApp Business Account id (WABA); identifier, used for provenance/setup.
+    wa_business_account_id: str = ""
+    # App secret (SECRET) for optional X-Hub-Signature-256 webhook validation.
+    # Empty => signature validation is skipped (documented dev fallback).
+    wa_app_secret: str = ""
+    wa_api_base: str = "https://graph.facebook.com"
+    wa_api_version: str = "v21.0"
+    wa_request_timeout_seconds: float = Field(default=30.0, gt=0.0)
 
     # --- AI provider ------------------------------------------------------
     ai_api_key: str = ""
